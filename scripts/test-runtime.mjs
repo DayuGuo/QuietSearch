@@ -11,6 +11,7 @@ const { Miniflare, convertV4MiniflareOptions } = await import(
 );
 const bundle = await readFile('dist/quietsearch/index.js', 'utf8');
 const fakeKey = 'sk-invalid-runtime-test-key';
+const fakeKagiKey = 'invalid-kagi-runtime-test-key';
 const calls = [];
 let mode = 'success';
 const fixture = {
@@ -42,8 +43,9 @@ const mf = new Miniflare(
     ],
     outboundService: async (request) => {
       const url = new URL(request.url);
-      assert.equal(url.origin, 'https://api.deepseek.com');
-      assert.equal(request.headers.get('Authorization'), `Bearer ${fakeKey}`);
+      assert.ok(['https://api.deepseek.com', 'https://kagi.com'].includes(url.origin));
+      const kagi = url.origin === 'https://kagi.com';
+      assert.equal(request.headers.get('Authorization'), `Bearer ${kagi ? fakeKagiKey : fakeKey}`);
       calls.push(url.pathname);
       if (mode === 'unauthorized') return Response.json({ error: 'synthetic' }, { status: 401 });
       if (mode === 'redirect')
@@ -52,6 +54,15 @@ const mf = new Miniflare(
           headers: { Location: 'https://redirect.invalid/do-not-visit' },
         });
       if (url.pathname === '/models') return Response.json({ data: [{ id: 'deepseek-flash' }] });
+      if (url.pathname === '/api/v1/search') {
+        assert.equal(request.method, 'POST');
+        assert.deepEqual(await request.json(), {
+          query: 'runtime test',
+          workflow: 'search',
+          limit: 50,
+        });
+        return Response.json({ data: { search: [fixture] } });
+      }
       if (url.pathname === '/v1/tools/search') {
         assert.deepEqual(await request.json(), {
           query: 'runtime test',
@@ -80,7 +91,7 @@ async function post(path, body = {}) {
     headers: {
       Origin: 'https://runtime.test',
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${fakeKey}`,
+      Authorization: `Bearer ${body.provider === 'kagi' ? fakeKagiKey : fakeKey}`,
     },
     body: JSON.stringify(body),
   });
@@ -124,8 +135,31 @@ try {
   assert.match(stream, /event: done/);
   assert.match(stream, /"promptTokens":10/);
   assert.deepEqual(calls.splice(0), ['/chat/completions']);
+
+  response = await post('search', { rawQuery: 'runtime test?', count: 50, provider: 'kagi' });
+  assert.equal(response.status, 200);
+  const kagiSearch = await response.json();
+  assert.equal(kagiSearch.provider, 'kagi');
+  assert.equal(kagiSearch.results[0].summary, fixture.snippet);
+  assert.deepEqual(calls.splice(0), ['/api/v1/search']);
+  response = await post('summary', {
+    rawQuery: kagiSearch.submittedQuery,
+    results: kagiSearch.results.map(({ id, title, url, summary }) => ({ id, title, url, summary })),
+  });
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /event: done/);
+  assert.deepEqual(calls.splice(0), ['/chat/completions']);
+  for (const [failure, status] of [
+    ['unauthorized', 401],
+    ['redirect', 502],
+  ]) {
+    mode = failure;
+    response = await post('search', { rawQuery: 'runtime test', count: 50, provider: 'kagi' });
+    assert.equal(response.status, status);
+    assert.deepEqual(calls.splice(0), ['/api/v1/search']);
+  }
   console.log(
-    'PASS: 5 real workerd regressions (connection, invalid key, blocked redirect, search, summary); all upstream responses are synthetic.',
+    'PASS: 9 real workerd regressions (DeepSeek + Kagi, credential separation, blocked redirects, search and summary); all upstream responses are synthetic.',
   );
 } finally {
   await mf.dispose();

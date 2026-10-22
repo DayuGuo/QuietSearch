@@ -36,18 +36,24 @@ npm run deploy
 
 按提示粘贴 Key，不把值放在 shell 参数、源文件、GitHub、wrangler vars、VITE_*、构建变量或 URL 中。首次建立 Worker 可能需要先部署没有 Secret 的版本；此时 server API 会拒绝服务，直到 Secret 生效。运行时 Secret 与构建环境变量不同。
 
+可另外添加 `KAGI_API_KEY` Secret 来启用 Kagi 搜索。只配置 Kagi 时可搜索，AI 回答需同时配置 `DEEPSEEK_API_KEY`。网页只显示已配置的引擎为可选；默认 BYOK 模式不会读取这些服务端 Key。
+
+```bash
+npx wrangler secret put KAGI_API_KEY
+```
+
 ## 4. 验收全部入口
 
 - 新的未登录窗口访问每个入口，确认 Access 拦截。已禁用的入口应不可访问。
 - 已登录后完成一次经你授权的搜索和问号回答。
 - 直接请求付费 API，没有 JWT、伪造 JWT、过期、错误 issuer/audience/签名都不能触发付费上游。看到登录页不能代替后端验证。
 - 浏览器配置接口、JS 包、页面、响应均不能读回 Secret；设置中仅显示“由部署者配置”。
-- server 模式忽略客户端 DeepSeek Key，且配置/认证缺失一律失败关闭。
+- server 模式忽略客户端 Key，且配置/认证缺失一律失败关闭。
 
 Static Assets 的内部路由不保证 ctx.access 可用。实现使用 jose 校验 `Cf-Access-Jwt-Assertion` 的签名、issuer、audience、exp 和 subject；JWKS 地址来自受信任 team domain。没有生产跳过身份验证的开关。
 
 ## 轮换和回滚
 
-在 DeepSeek 平台撤销旧 Key，用新 Key 更新同名运行时 Secret，并确认部署生效。撤销 Access 用户权限在身份提供商/Access 中操作。回滚源码后仍需检查 Secret 与 Access 策略；它们不是 Git 提交的一部分。
+在对应服务商平台撤销旧 Key，用新 Key 更新同名运行时 Secret，并确认部署生效。撤销 Access 用户权限在身份提供商/Access 中操作。回滚源码后仍需检查 Secret 与 Access 策略；它们不是 Git 提交的一部分。
 
 自动化测试使用测试签名和合成凭证。真实 Access/账号联通仍需在你的部署环境验证，见 verification.md。

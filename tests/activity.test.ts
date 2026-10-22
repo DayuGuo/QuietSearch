@@ -17,6 +17,28 @@ beforeEach(() => {
 });
 
 describe('bounded browser-local activity', () => {
+  it('records each search engine and migrates existing DeepSeek-only data', async () => {
+    storage.setItem(
+      'quietsearch.activity.v1',
+      JSON.stringify({
+        days: [{ day: new Date().toLocaleDateString('en-CA'), searches: 3 }],
+        history: [],
+      }),
+    );
+    const { activity } = await import('../src/lib/activity');
+    activity.setPreferences({ searchProvider: 'kagi' });
+    const item = activity.start('Kagi search', 'search', 'kagi');
+    expect(activity.getSnapshot().history[0].provider).toBe('kagi');
+    expect(activity.getSnapshot().days.find((day) => day.day === item.day)).toMatchObject({
+      searches: 4,
+      deepseekSearches: 3,
+      kagiSearches: 1,
+    });
+    vi.resetModules();
+    const reloaded = await import('../src/lib/activity');
+    expect(reloaded.activity.getSnapshot().preferences.searchProvider).toBe('kagi');
+    expect(reloaded.activity.getSnapshot().history[0].provider).toBe('kagi');
+  });
   it('records successful searches, result counts and AI usage separately', async () => {
     const { activity } = await import('../src/lib/activity');
     const entry = activity.start('test query?', 'answer');

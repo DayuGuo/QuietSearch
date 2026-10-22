@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import { AppError, LIMITS, summarySources, type SearchResponse } from '../../shared/contracts';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  AppError,
+  LIMITS,
+  summarySources,
+  type SearchResponse,
+  type SearchProvider,
+} from '../../shared/contracts';
 import { parseSearchInput } from '../../shared/query-intent';
 import * as api from '../lib/api';
 import { activity, localDay } from '../lib/activity';
@@ -69,7 +75,15 @@ export function useSearch() {
     }
   }
 
-  async function submit(raw: string, key: string) {
+  async function submit(
+    raw: string,
+    options: {
+      provider: SearchProvider;
+      searchKey: string;
+      summaryKey: string;
+      canSummarize: boolean;
+    },
+  ) {
     let input: ReturnType<typeof parseSearchInput>;
     try {
       input = parseSearchInput(raw);
@@ -94,15 +108,29 @@ export function useSearch() {
     setSummary(emptySummary);
     setError(undefined);
     setLoading(true);
-    const record = activity.start(input.submittedQuery, input.mode);
+    const record = activity.start(input.submittedQuery, input.mode, options.provider);
     try {
-      const value = await api.search(input.submittedQuery, LIMITS.searchResults, key, abort.signal);
+      const value = await api.search(
+        input.submittedQuery,
+        LIMITS.searchResults,
+        options.searchKey,
+        abort.signal,
+        options.provider,
+      );
       activity.finish(record.id, record.day, 'success', value.results.length);
       if (generation.current !== current) return;
       snapshot.current = { result: value, day: record.day };
-      setResult(value);
+      setResult({ ...value, provider: options.provider });
       setLoading(false);
-      await answer(value, localDay(), key, current, abort);
+      if (
+        value.mode === 'answer' &&
+        !options.canSummarize &&
+        summarySources(value.results).length
+      ) {
+        setSummary({ status: 'error', text: '', error: 'MISSING_KEY' });
+      } else {
+        await answer(value, localDay(), options.summaryKey, current, abort);
+      }
     } catch (failure) {
       activity.finish(record.id, record.day, abort.signal.aborted ? 'cancelled' : 'failed');
       if (generation.current === current) {
@@ -114,22 +142,22 @@ export function useSearch() {
     }
   }
 
-  function stop() {
+  const stop = useCallback(() => {
     controller.current?.abort();
     activeInput.current = null;
     setLoading(false);
     setSummary((previous) =>
       previous.status === 'loading' ? { ...previous, status: 'cancelled' } : previous,
     );
-  }
-  function clear() {
+  }, []);
+  const clear = useCallback(() => {
     generation.current++;
     stop();
     snapshot.current = null;
     setResult(null);
     setSummary(emptySummary);
     setError(undefined);
-  }
+  }, [stop]);
   async function retry(key: string) {
     if (!snapshot.current || summary.status === 'loading') return;
     const current = ++generation.current;

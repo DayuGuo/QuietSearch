@@ -1,2 +1,2 @@
-# 默认 BYOK 无需任何服务器密钥：在网页设置中添加自己的 DeepSeek Key。
+# 默认 BYOK 无需任何服务器密钥：在网页设置中添加自己的 DeepSeek / Kagi Key。
 # 私人模式参阅 docs/private-deployment.md。真实 .dev.vars 已被忽略。

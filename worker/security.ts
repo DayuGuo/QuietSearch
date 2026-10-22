@@ -4,6 +4,7 @@ export interface Env {
   ASSETS: { fetch(request: Request): Promise<Response> };
   KEY_MODE?: string;
   DEEPSEEK_API_KEY?: string;
+  KAGI_API_KEY?: string;
   SUMMARY_MODEL?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
   CF_ACCESS_AUD?: string;

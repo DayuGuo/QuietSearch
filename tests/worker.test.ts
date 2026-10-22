@@ -42,7 +42,12 @@ describe('Worker API and upstream boundaries', () => {
   it('returns public config without secrets and secures static HTML', async () => {
     const env = makeEnv({ DEEPSEEK_API_KEY: 'never-return-me' });
     const response = await worker.fetch(new Request('https://test.local/api/config'), env);
-    expect(await response.json()).toEqual({ keyMode: 'byok', maxQueryLength: 128 });
+    expect(await response.json()).toEqual({
+      keyMode: 'byok',
+      maxQueryLength: 128,
+      searchProviders: ['deepseek', 'kagi'],
+      summaryAvailable: true,
+    });
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     const html = await worker.fetch(new Request('https://test.local/'), env);
     expect(html.headers.get('Content-Security-Policy')).toContain("connect-src 'self'");

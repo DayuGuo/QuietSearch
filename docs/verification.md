@@ -4,6 +4,18 @@
 
 ## 实际执行与结果
 
+### Kagi 搜索引擎接入
+
+设置新增 DeepSeek / Kagi 单选，默认 DeepSeek；仅选择已配置引擎进行一次搜索，切换/保存不请求付费服务。Kagi 使用官方 v1 POST + Bearer 和单批 limit=50，不启用 extract、下一页、自动重试或其他引擎回退。两家 BYOK Key 分别留在页面内存，搜索与 DeepSeek 摘要请求分开发送各自 Key；仅 Kagi Key 可搜索，缺少 DeepSeek Key 时保留结果并引导配置，添加后沿用原快照生成回答。
+
+保留上游排序和稳定引用编号，Kagi 不显示虚构评分/来源等级。历史记录引擎，日用量区分两家搜索数，旧记录兼容为 DeepSeek。server 模式按已验证 Access 身份读取对应 Secret；配置接口只返回可用引擎及摘要可用性，缺少 Key 不回退另一服务商。Kagi 401/402/403/429、重定向及错误响应均有合成回归，错误不暴露上游原文。
+
+实际通过：`npm run check`（类型、lint、7 文件 124 项测试、生产构建）；Playwright 38 项桌面/手机深色测试（含新增引擎切换、密钥隔离、只用 Kagi、晚到摘要隔离、按引擎计数和 axe 检查）；真实 workerd 9 项回归；Wrangler deploy dry run。修复手机每日明细横向滚动区的键盘焦点，axe 在主题过渡结束后核验稳定配色。
+
+截图生成脚本实际生成中英文各 9 张图片，新增两版 Kagi 配置教程；已检查桌面、手机及中英文设置截图。使用独立浏览器与全部合成响应，不读真实 Key 或用户记录。没有使用真实付费 Kagi / DeepSeek API，账户权限、余额、真实搜索质量和实际计费尚未实测。
+
+官方契约依据：[Kagi OpenAPI](https://kagi.com/api/docs/_spec/openapi.yaml?download)、[API 设置](https://help.kagi.com/kagi/api/overview.html)。
+
 ### README 精简与英文版补记
 
 精简 `README.md`，新增 `README.en.md`，顶部提供中英文互链。两版均保留首页与图文使用教程，将较长截图放入可展开区域，保留部署必需命令、Key 隐私和费用边界；详细资料链接到现有文档，英文版明确标注尚为中文的深入文档。

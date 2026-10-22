@@ -2,6 +2,7 @@ import {
   AppError,
   type PublicConfig,
   type SearchResponse,
+  type SearchProvider,
   type Source,
   type Usage,
 } from '../../shared/contracts';
@@ -47,8 +48,9 @@ export async function search(
   count: number,
   key: string,
   signal: AbortSignal,
+  provider: SearchProvider,
 ): Promise<SearchResponse> {
-  return (await post('search', { rawQuery, count }, key, signal)).json();
+  return (await post('search', { rawQuery, count, provider }, key, signal)).json();
 }
 export async function summarize(
   rawQuery: string,

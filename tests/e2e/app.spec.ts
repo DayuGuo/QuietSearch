@@ -14,6 +14,7 @@ async function fixtures(
   } = {},
 ) {
   const counts = { search: 0, summary: 0, models: 0 };
+  const requests: { path: string; key: string | undefined; body: Record<string, unknown> }[] = [];
   let release: (() => void) | undefined;
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -21,6 +22,11 @@ async function fixtures(
       await route.continue();
       return;
     }
+    requests.push({
+      path,
+      key: route.request().headers().authorization,
+      body: route.request().postDataJSON(),
+    });
     if (path === '/api/check-key') {
       counts.models++;
       await route.fulfill({ json: { ok: true } });
@@ -28,9 +34,10 @@ async function fixtures(
     }
     if (path === '/api/search') {
       counts.search++;
-      const { rawQuery, count } = route.request().postDataJSON() as {
+      const { rawQuery, count, provider } = route.request().postDataJSON() as {
         rawQuery: string;
         count: number;
+        provider?: string;
       };
       expect(count).toBe(50);
       const mode = /[?？]$/.test(rawQuery.trim()) ? 'answer' : 'search';
@@ -43,6 +50,7 @@ async function fixtures(
           : rawQuery.trim();
       await route.fulfill({
         json: {
+          provider: provider ?? 'deepseek',
           submittedQuery: rawQuery.trim(),
           query,
           mode,
@@ -63,8 +71,9 @@ async function fixtures(
                     snippet: item.snippet,
                     summary: item.summary,
                     date: item.date,
-                    relevanceScore: Number(((index * 3) / 50).toFixed(2)),
-                    authority: index % 5,
+                    relevanceScore:
+                      provider === 'kagi' ? null : Number(((index * 3) / 50).toFixed(2)),
+                    authority: provider === 'kagi' ? null : index % 5,
                   };
                 }),
           requestedCount: count,
@@ -100,7 +109,7 @@ async function fixtures(
     }
     await route.abort();
   });
-  return { counts, options, release: () => release?.() };
+  return { counts, requests, options, release: () => release?.() };
 }
 async function addKey(page: Page) {
   await page.getByRole('button', { name: '设置', exact: true }).click();
@@ -112,6 +121,126 @@ async function query(page: Page, text: string) {
   await page.getByRole('textbox', { name: '搜索', exact: true }).fill(text);
   await page.getByRole('textbox', { name: '搜索', exact: true }).press('Enter');
 }
+
+const dummyKagiKey = 'invalid-synthetic-kagi-browser-key';
+async function selectKagi(page: Page) {
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('radio', { name: 'Kagi', exact: true }).check();
+  await page.getByLabel('Kagi API Key', { exact: true }).fill(dummyKagiKey);
+  await page.getByRole('button', { name: '使用 Kagi 密钥', exact: true }).click();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+}
+
+test('Kagi-only search works; adding DeepSeek later answers from the same snapshot', async ({
+  page,
+}, info) => {
+  const state = await fixtures(page);
+  await page.goto('/');
+  await selectKagi(page);
+  expect(state.counts).toEqual({ search: 0, summary: 0, models: 0 });
+  await query(page, 'Kagi ordinary search');
+  await expect(page.locator('.results-meta')).toContainText('Kagi');
+  await expect(page.getByRole('option', { name: '综合评分优先' })).toHaveCount(0);
+  expect(state.counts.summary).toBe(0);
+  await query(page, 'Kagi synthetic question?');
+  await expect(page.getByText(/网页结果已就绪。添加 DeepSeek/)).toBeVisible();
+  expect(state.counts).toEqual({ search: 2, summary: 0, models: 0 });
+  await page.getByRole('button', { name: '配置 AI 回答', exact: true }).click();
+  await expect(page.getByLabel('Kagi API Key', { exact: true })).toHaveValue(dummyKagiKey);
+  await page.getByLabel('DeepSeek API Key', { exact: true }).fill(dummyKey);
+  await page.getByRole('button', { name: '使用此密钥', exact: true }).click();
+  const violations = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+    .analyze();
+  expect(violations.violations.map((item) => item.id)).toEqual([]);
+  await mkdir('artifacts', { recursive: true });
+  await page.getByRole('radio', { name: 'Kagi', exact: true }).scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: `artifacts/kagi-settings-${info.project.name}.png`,
+    animations: 'disabled',
+  });
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.getByRole('button', { name: '生成 AI 回答', exact: true }).click();
+  await expect(page.getByText(/Synthetic answer:/)).toBeVisible();
+  expect(state.counts).toEqual({ search: 2, summary: 1, models: 0 });
+  expect(
+    state.requests
+      .filter((item) => item.path === '/api/search')
+      .every((item) => item.key === `Bearer ${dummyKagiKey}` && item.body.provider === 'kagi'),
+  ).toBe(true);
+  expect(state.requests.find((item) => item.path === '/api/summary')?.key).toBe(
+    `Bearer ${dummyKey}`,
+  );
+  await page.screenshot({
+    path: `artifacts/kagi-results-${info.project.name}.png`,
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.getByRole('button', { name: '每日用量', exact: true }).click();
+  await expect(page.locator('.provider-usage')).toHaveText('DeepSeek: 0 · Kagi: 2');
+  const stored = await page.evaluate(() =>
+    JSON.stringify({ local: localStorage, session: sessionStorage, cookie: document.cookie }),
+  );
+  expect(stored).not.toContain(dummyKey);
+  expect(stored).not.toContain(dummyKagiKey);
+});
+
+test('switching engines keeps separate keys and persists only the engine choice', async ({
+  page,
+}) => {
+  const state = await fixtures(page);
+  await page.goto('/');
+  await addKey(page);
+  await query(page, 'DeepSeek ordinary search');
+  await expect(page.locator('.results-meta')).toContainText('DeepSeek');
+  await selectKagi(page);
+  expect(state.counts.search).toBe(1);
+  await expect(page.locator('.results-content')).toHaveCount(0);
+  await query(page, 'Kagi ordinary search');
+  await expect(page.locator('.results-meta')).toContainText('Kagi');
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('radio', { name: 'DeepSeek', exact: true }).check();
+  await expect(page.getByLabel('DeepSeek API Key', { exact: true })).toHaveValue(dummyKey);
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await query(page, 'DeepSeek again');
+  await expect(page.locator('.results-meta')).toContainText('DeepSeek');
+  expect(
+    state.requests
+      .filter((item) => item.path === '/api/search')
+      .map((item) => [item.body.provider, item.key]),
+  ).toEqual([
+    ['deepseek', `Bearer ${dummyKey}`],
+    ['kagi', `Bearer ${dummyKagiKey}`],
+    ['deepseek', `Bearer ${dummyKey}`],
+  ]);
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await page.getByRole('radio', { name: 'Kagi', exact: true }).check();
+  await page.getByRole('button', { name: '关闭', exact: true }).click();
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '先连接你的 Kagi' })).toBeVisible();
+  await page.getByRole('button', { name: '设置', exact: true }).click();
+  await expect(page.getByRole('radio', { name: 'Kagi', exact: true })).toBeChecked();
+  await expect(page.getByLabel('Kagi API Key', { exact: true })).toHaveValue('');
+  await expect(page.getByLabel('DeepSeek API Key', { exact: true })).toHaveValue('');
+  expect(state.counts.search).toBe(3);
+});
+
+test('switching to Kagi isolates an in-flight DeepSeek answer without automatically searching', async ({
+  page,
+}) => {
+  const state = await fixtures(page, { holdSummary: true });
+  await page.goto('/');
+  await addKey(page);
+  await query(page, 'old DeepSeek question?');
+  await expect(page.getByText('正在阅读来源摘要…')).toBeVisible();
+  await selectKagi(page);
+  state.release();
+  await expect(page.locator('.results-content')).toHaveCount(0);
+  expect(state.counts).toEqual({ search: 1, summary: 1, models: 0 });
+  await query(page, 'new Kagi search');
+  await expect(page.locator('.results-meta')).toContainText('Kagi');
+  await expect(page.getByRole('region', { name: 'AI 回答', exact: true })).toHaveCount(0);
+});
 
 test('first-run setup, free connection test, and no automatic search', async ({ page }) => {
   const { counts } = await fixtures(page);
@@ -338,6 +467,11 @@ test('home, settings, results, history and usage pass automated accessibility ch
   await fixtures(page);
   await page.goto('/');
   const scan = async () => {
+    // Inspect settled theme colors, not a frame halfway through a transition.
+    await expect(page.locator('html')).toHaveAttribute('data-theme', /^(light|dark)$/);
+    await page.evaluate(() =>
+      Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => {}))),
+    );
     const result = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
       .analyze();

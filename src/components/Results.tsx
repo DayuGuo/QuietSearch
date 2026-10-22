@@ -43,6 +43,7 @@ export function CitedText({ text, results }: { text: string; results: SearchResu
 export function Results({
   result,
   summary,
+  canAnswer,
   t,
   language,
   pageSize,
@@ -51,6 +52,7 @@ export function Results({
 }: {
   result: SearchResponse;
   summary: SummaryState;
+  canAnswer: boolean;
   t: Dictionary;
   language: 'zh' | 'en';
   pageSize: 10 | 20;
@@ -63,6 +65,8 @@ export function Results({
   const ordered = orderResults(result.results, order);
   const visible = ordered.slice(0, pages * pageSize);
   const remaining = ordered.length - visible.length;
+  const kagi = result.provider === 'kagi';
+  const limitHint = kagi ? t.kagiLimitHint : t.apiLimitHint;
   async function copyAnswer() {
     try {
       await navigator.clipboard.writeText(summary.text);
@@ -76,7 +80,7 @@ export function Results({
       <div className="results-meta">
         <span className="active-tab">
           <Globe2 size={16} />
-          {t.search}
+          {kagi ? 'Kagi' : 'DeepSeek'} · {t.search}
         </span>
         <span>
           {result.results.length} {t.resultLabel}
@@ -93,15 +97,15 @@ export function Results({
             setPages(1);
           }}
         >
-          <option value="default">{t.sortDefault}</option>
-          <option value="score">{t.sortScore}</option>
-          <option value="authority">{t.sortAuthority}</option>
+          <option value="default">{kagi ? t.kagiSortDefault : t.sortDefault}</option>
+          {!kagi && <option value="score">{t.sortScore}</option>}
+          {!kagi && <option value="authority">{t.sortAuthority}</option>}
           <option value="date">{t.sortDate}</option>
         </select>
       </div>
       <details className="ranking-details">
         <summary>{t.rankingDetails}</summary>
-        <p>{t.rankingExplanation}</p>
+        <p>{kagi ? t.kagiRanking : t.rankingExplanation}</p>
         <p>{t.sortingScope}</p>
         {result.requestedCount !== undefined && (
           <p className="retrieval-counts">
@@ -110,15 +114,15 @@ export function Results({
           </p>
         )}
         <p>
-          {t.apiLimitHint} {t.lowResultHint}
+          {limitHint} {t.lowResultHint}
         </p>
         <p>{t.queryTips}</p>
         <a
-          href="https://api-docs.deepseek.com/api/search/"
+          href={kagi ? 'https://kagi.com/api/docs' : 'https://api-docs.deepseek.com/api/search/'}
           target="_blank"
           rel="noopener noreferrer"
         >
-          DeepSeek Search API
+          {kagi ? 'Kagi' : 'DeepSeek'} Search API
         </a>
       </details>
       {result.mode === 'answer' && order !== 'default' && (
@@ -151,7 +155,11 @@ export function Results({
                   {['error', 'cancelled'].includes(summary.status) && (
                     <button className="small-button" onClick={onRetry}>
                       <RotateCcw size={14} />
-                      {t.retry}
+                      {summary.error === 'MISSING_KEY'
+                        ? canAnswer
+                          ? t.generateAnswer
+                          : t.configureAI
+                        : t.retry}
                     </button>
                   )}
                 </>
@@ -173,7 +181,11 @@ export function Results({
           ) : null}
           {summary.status === 'error' && (
             <p className="error-message" role="status">
-              {t.answerFailed} {errorMessage(summary.error ?? 'STREAM_ERROR', language)}
+              {summary.error === 'MISSING_KEY'
+                ? canAnswer
+                  ? t.answerReady
+                  : t.missingSummaryKey
+                : `${t.answerFailed} ${errorMessage(summary.error ?? 'STREAM_ERROR', language)}`}
             </p>
           )}
           {summary.status === 'cancelled' && <p className="small muted">{t.cancelled}</p>}
@@ -259,7 +271,7 @@ export function Results({
             </>
           ) : (
             <p className="small muted">
-              {t.allShown} {t.apiLimitHint}
+              {t.allShown} {limitHint}
             </p>
           )}
         </div>

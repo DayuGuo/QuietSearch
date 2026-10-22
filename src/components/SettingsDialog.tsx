@@ -9,29 +9,31 @@ import {
   ShieldCheck,
   Trash2,
 } from 'lucide-react';
-import type { PublicConfig } from '../../shared/contracts';
+import type { PublicConfig, SearchProvider } from '../../shared/contracts';
 import { AppError } from '../../shared/contracts';
 import { activity, useActivity } from '../lib/activity';
 import { checkKey } from '../lib/api';
 import { errorMessage, type Dictionary } from '../lib/i18n';
 import { Dialog } from './Dialog';
 
-export function SettingsDialog({
+function KeyConnection({
   t,
   config,
   apiKey,
   onKey,
-  onClose,
-  onClear,
+  provider,
+  showAIRole = false,
 }: {
   t: Dictionary;
   config: PublicConfig | null;
   apiKey: string;
   onKey: (key: string) => void;
-  onClose: () => void;
-  onClear: (target: 'history' | 'usage' | 'all') => void;
+  provider: SearchProvider;
+  showAIRole?: boolean;
 }) {
-  const { preferences, storageAvailable } = useActivity();
+  const { preferences } = useActivity();
+  const kagi = provider === 'kagi';
+  const id = `${provider}-key`;
   const [draft, setDraft] = useState(apiKey),
     [visible, setVisible] = useState(false);
   const [testing, setTesting] = useState(false),
@@ -72,115 +74,193 @@ export function SettingsDialog({
     }
   }
   return (
-    <Dialog title={t.settings} closeLabel={t.close} onClose={onClose}>
-      <section className="settings-section">
-        <h3>
-          <KeyRound size={19} />
-          {t.keyTitle}
-        </h3>
-        {config?.keyMode === 'server' ? (
-          <p className="muted">{t.privateMode}</p>
-        ) : (
-          <>
-            <p className="muted">{t.keyIntro}</p>
-            <div className="setup-step">
-              <strong>{t.step1}</strong>
-              <p>{t.step1Text}</p>
-              <a
-                href="https://platform.deepseek.com/api_keys"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t.getKey}
-                <ExternalLink size={14} />
-              </a>
-            </div>
-            <div className="setup-step">
-              <strong>{t.step2}</strong>
-              <label className="field-label" htmlFor="api-key">
-                {t.tokenLabel}
-              </label>
-              <div className="key-input">
-                <input
-                  id="api-key"
-                  type={visible ? 'text' : 'password'}
-                  autoComplete="off"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={draft}
-                  maxLength={512}
-                  placeholder="sk-…"
-                  aria-describedby="token-hint key-privacy"
-                  onChange={(event) => changed(event.target.value)}
-                />
-                <button
-                  className="icon-button"
-                  type="button"
-                  aria-label={visible ? t.hideKey : t.showKey}
-                  onClick={() => setVisible(!visible)}
-                >
-                  {visible ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-              <p id="token-hint" className="small muted">
-                {t.tokenHint}
-              </p>
-            </div>
-            <p className="privacy-note" id="key-privacy">
-              <ShieldCheck size={17} />
-              {t.keyPrivacy}
-            </p>
-          </>
-        )}
-        <div className="button-row">
-          {config?.keyMode !== 'server' && (
-            <button
-              className="button primary"
-              disabled={draft.trim().length < 8 || !config || testing}
-              onClick={() => {
-                onKey(draft.trim());
-                setNotice(t.savedKey);
-                setVisible(false);
-              }}
+    <section className="settings-section">
+      <h3>
+        <KeyRound size={19} />
+        {kagi ? t.kagiKeyTitle : t.keyTitle}
+      </h3>
+      {!kagi && showAIRole && <p className="small muted">{t.aiRole}</p>}
+      {config?.keyMode === 'server' ? (
+        <p className="muted">{t.privateMode}</p>
+      ) : (
+        <>
+          <p className="muted">{kagi ? t.kagiKeyIntro : t.keyIntro}</p>
+          <div className="setup-step">
+            <strong>{t.step1}</strong>
+            <p>{kagi ? t.kagiStep1Text : t.step1Text}</p>
+            <a
+              href={kagi ? 'https://kagi.com/api/keys' : 'https://platform.deepseek.com/api_keys'}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <Check size={17} />
-              {t.saveKey}
-            </button>
-          )}
+              {t.getKey}
+              <ExternalLink size={14} />
+            </a>
+          </div>
+          <div className="setup-step">
+            <strong>{t.step2}</strong>
+            <label className="field-label" htmlFor={id}>
+              {kagi ? 'Kagi API Key' : t.tokenLabel}
+            </label>
+            <div className="key-input">
+              <input
+                id={id}
+                type={visible ? 'text' : 'password'}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                value={draft}
+                maxLength={512}
+                placeholder={kagi ? 'Kagi API Key' : 'sk-…'}
+                aria-describedby={`${id}-hint ${id}-privacy`}
+                onChange={(event) => changed(event.target.value)}
+              />
+              <button
+                className="icon-button"
+                type="button"
+                aria-label={visible ? t.hideKey : t.showKey}
+                onClick={() => setVisible(!visible)}
+              >
+                {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            <p id={`${id}-hint`} className="small muted">
+              {kagi ? t.kagiTokenHint : t.tokenHint}
+            </p>
+          </div>
+          <p className="privacy-note" id={`${id}-privacy`}>
+            <ShieldCheck size={17} />
+            {t.keyPrivacy}
+          </p>
+        </>
+      )}
+      {kagi && <p className="small muted">{t.kagiValidation}</p>}
+      <div className="button-row">
+        {config?.keyMode !== 'server' && (
+          <button
+            className="button primary"
+            disabled={draft.trim().length < 8 || !config || testing}
+            onClick={() => {
+              onKey(draft.trim());
+              setNotice(t.savedKey);
+              setVisible(false);
+            }}
+          >
+            <Check size={17} />
+            {kagi ? t.saveKagiKey : t.saveKey}
+          </button>
+        )}
+        {!kagi && (
           <button
             className="button"
             disabled={
-              testing || !config || (config.keyMode !== 'server' && draft.trim().length < 8)
+              testing ||
+              !config ||
+              config.summaryAvailable === false ||
+              (config.keyMode !== 'server' && draft.trim().length < 8)
             }
             onClick={() => void test()}
           >
             {testing ? <LoaderCircle className="spin" size={17} /> : <ShieldCheck size={17} />}
             {testing ? t.testing : t.testKey}
           </button>
-          {apiKey && (
-            <button
-              className="text-button danger"
-              onClick={() => {
-                changed('');
-                onKey('');
-                setNotice(t.removedKey);
-              }}
-            >
-              {t.removeKey}
-            </button>
-          )}
-        </div>
-        {notice && (
-          <p className="success-message" role="status">
-            {notice}
-          </p>
         )}
-        {error && (
-          <p className="error-message" role="alert">
-            {error}
-          </p>
+        {apiKey && (
+          <button
+            className="text-button danger"
+            onClick={() => {
+              changed('');
+              onKey('');
+              setNotice(t.removedKey);
+            }}
+          >
+            {t.removeKey}
+          </button>
         )}
+      </div>
+      {notice && (
+        <p className="success-message" role="status">
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="error-message" role="alert">
+          {error}
+        </p>
+      )}
+    </section>
+  );
+}
+
+export function SettingsDialog({
+  t,
+  config,
+  apiKey,
+  kagiKey,
+  provider,
+  onProvider,
+  onKagiKey,
+  onKey,
+  onClose,
+  onClear,
+}: {
+  t: Dictionary;
+  config: PublicConfig | null;
+  apiKey: string;
+  kagiKey: string;
+  provider: SearchProvider;
+  onProvider: (provider: SearchProvider) => void;
+  onKagiKey: (key: string) => void;
+  onKey: (key: string) => void;
+  onClose: () => void;
+  onClear: (target: 'history' | 'usage' | 'all') => void;
+}) {
+  const { preferences, storageAvailable } = useActivity();
+  return (
+    <Dialog title={t.settings} closeLabel={t.close} onClose={onClose}>
+      <section className="settings-section">
+        <h3>{t.engineTitle}</h3>
+        <p className="muted">{t.engineHint}</p>
+        <fieldset className="engine-options">
+          <legend className="sr-only">{t.engineTitle}</legend>
+          {(['deepseek', 'kagi'] as const).map((engine) => {
+            const available = !config?.searchProviders || config.searchProviders.includes(engine);
+            return (
+              <label key={engine} className={provider === engine ? 'selected' : ''}>
+                <input
+                  type="radio"
+                  name="search-engine"
+                  value={engine}
+                  checked={provider === engine}
+                  disabled={!config || !available}
+                  onChange={() => onProvider(engine)}
+                />
+                <span>{engine === 'kagi' ? 'Kagi' : 'DeepSeek'}</span>
+                {!available && <small>{t.engineUnavailable}</small>}
+              </label>
+            );
+          })}
+        </fieldset>
       </section>
+      {provider === 'kagi' && (
+        <KeyConnection
+          key="kagi"
+          t={t}
+          config={config}
+          apiKey={kagiKey}
+          onKey={onKagiKey}
+          provider="kagi"
+        />
+      )}
+      <KeyConnection
+        key="deepseek"
+        t={t}
+        config={config}
+        apiKey={apiKey}
+        onKey={onKey}
+        provider="deepseek"
+        showAIRole={provider === 'kagi'}
+      />
       <section className="settings-section">
         <h3>{t.appearance}</h3>
         <div className="settings-grid">

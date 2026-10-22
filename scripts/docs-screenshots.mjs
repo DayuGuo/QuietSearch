@@ -242,7 +242,7 @@ try {
     await page.getByText(t.connected).waitFor();
     // The displayed notice is a synthetic response, documented in the README.
     const dialog = await page.getByRole('dialog').boundingBox();
-    const connection = await page.locator('.settings-section').first().boundingBox();
+    const connection = await page.locator('.settings-section').nth(1).boundingBox();
     assert.ok(dialog && connection);
     await page.screenshot({
       path: fileURLToPath(new URL('setup.png', directory)),
@@ -289,6 +289,40 @@ try {
       false,
     );
     assert.deepEqual(calls, { search: before.search + 3, summary: before.summary + 1 });
+    await page
+      .getByRole('button', { name: language === 'zh' ? '设置' : 'Settings', exact: true })
+      .click();
+    await page.getByRole('radio', { name: 'Kagi', exact: true }).check();
+    const fakeKagiKey = 'invalid-synthetic-kagi-documentation-key';
+    await page.getByLabel('Kagi API Key', { exact: true }).fill(fakeKagiKey);
+    await page
+      .getByRole('button', {
+        name: language === 'zh' ? '使用 Kagi 密钥' : 'Use Kagi key',
+        exact: true,
+      })
+      .click();
+    await page.getByRole('radio', { name: 'Kagi', exact: true }).scrollIntoViewIfNeeded();
+    const kagiDialog = await page.getByRole('dialog').boundingBox();
+    const kagiConnection = await page.locator('.settings-section').nth(1).boundingBox();
+    assert.ok(kagiDialog && kagiConnection);
+    await page.screenshot({
+      path: fileURLToPath(new URL('kagi-setup.png', directory)),
+      clip: {
+        x: kagiDialog.x,
+        y: kagiDialog.y,
+        width: kagiDialog.width,
+        height: Math.min(
+          kagiDialog.height,
+          kagiConnection.y + kagiConnection.height - kagiDialog.y,
+        ),
+      },
+      animations: 'disabled',
+    });
+    assert.equal(
+      await page.evaluate((key) => JSON.stringify(localStorage).includes(key), fakeKagiKey),
+      false,
+    );
+    assert.deepEqual(calls, { search: before.search + 3, summary: before.summary + 1 });
     await context.close();
 
     const mobile = await browser.newContext({
@@ -307,7 +341,7 @@ try {
   }
   assert.deepEqual(blocked, []);
   process.stdout.write(
-    'Saved 16 documentation screenshots (Chinese + English); all API responses are synthetic.\n',
+    'Saved 18 documentation screenshots (Chinese + English); all API responses are synthetic.\n',
   );
 } finally {
   await browser?.close();

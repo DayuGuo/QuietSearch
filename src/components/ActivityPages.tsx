@@ -63,6 +63,8 @@ export function HistoryPage({
                       { hour: '2-digit', minute: '2-digit' },
                     )}
                     <i>·</i>
+                    {item.provider === 'kagi' ? 'Kagi' : 'DeepSeek'}
+                    <i>·</i>
                     {item.mode === 'answer' ? t.searchAnswer : t.searchOnly}
                     <i>·</i>
                     {item.status === 'success'
@@ -136,6 +138,9 @@ export function UsagePage({ t, onClear }: { t: Dictionary; onClear: () => void }
           </div>
         ))}
       </div>
+      <p className="small muted provider-usage">
+        DeepSeek: {today?.deepseekSearches ?? 0} · Kagi: {today?.kagiSearches ?? 0}
+      </p>
       <section className="usage-chart">
         <div className="section-heading">
           <h2>{t.last7}</h2>
@@ -190,12 +195,14 @@ export function UsagePage({ t, onClear }: { t: Dictionary; onClear: () => void }
       {!days.length ? (
         <p className="notice">{t.noUsage}</p>
       ) : (
-        <div className="table-scroll">
+        <div className="table-scroll" tabIndex={0} role="region" aria-label={t.daily}>
           <table>
             <thead>
               <tr>
                 <th>{t.day}</th>
                 <th>{t.searches}</th>
+                <th>DeepSeek</th>
+                <th>Kagi</th>
                 <th>{t.successful}</th>
                 <th>{t.returned}</th>
                 <th>{t.aiRequests}</th>
@@ -206,6 +213,8 @@ export function UsagePage({ t, onClear }: { t: Dictionary; onClear: () => void }
                 <tr key={item.day}>
                   <td>{item.day}</td>
                   <td>{item.searches}</td>
+                  <td>{item.deepseekSearches}</td>
+                  <td>{item.kagiSearches}</td>
                   <td>{item.successes}</td>
                   <td>{item.results}</td>
                   <td>{item.aiRequests}</td>

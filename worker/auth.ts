@@ -1,5 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { AppError } from '../shared/contracts';
+import { AppError, type SearchProvider } from '../shared/contracts';
 import type { Env } from './security';
 
 let cachedJWKS: { issuer: string; keys: ReturnType<typeof createRemoteJWKSet> } | undefined;
@@ -37,11 +37,17 @@ export async function verifyAccess(request: Request, env: Env): Promise<string> 
   }
 }
 
-export async function resolveKey(request: Request, env: Env, authenticate = verifyAccess) {
+export async function resolveKey(
+  request: Request,
+  env: Env,
+  authenticate = verifyAccess,
+  provider: SearchProvider = 'deepseek',
+) {
   if (keyMode(env) === 'server') {
     const identity = await authenticate(request, env);
-    if (!env.DEEPSEEK_API_KEY) throw new AppError('CONFIG_ERROR', 503);
-    return { key: env.DEEPSEEK_API_KEY, identity };
+    const key = provider === 'kagi' ? env.KAGI_API_KEY : env.DEEPSEEK_API_KEY;
+    if (!key) throw new AppError('CONFIG_ERROR', 503);
+    return { key, identity };
   }
   const header = request.headers.get('Authorization');
   const key = header?.startsWith('Bearer ') ? header.slice(7) : '';

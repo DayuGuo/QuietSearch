@@ -65,6 +65,26 @@ const zh = {
   answerFailed: '搜索结果已就绪，AI 回答暂时不可用。',
   cancelled: '已停止',
   truncated: '回答达到长度上限，可能尚未完整。',
+  engineTitle: '网页搜索引擎',
+  engineHint: '选择一个引擎搜索网页；AI 回答始终使用 DeepSeek。切换不会发起请求。',
+  engineUnavailable: '此引擎未由部署者配置。',
+  kagiBeginTitle: '先连接你的 Kagi',
+  kagiKeyTitle: '连接 Kagi',
+  kagiKeyIntro: '用于网页搜索。API 与 Kagi 会员分开计费，费用由你的 Kagi 账户承担。',
+  kagiStep1Text: '打开 Kagi API 平台，创建 Key 并设置 API 计费。',
+  kagiTokenHint: '粘贴 Kagi API Key，不要填写登录密码或会话链接。',
+  kagiValidation: '保存不会验证密钥。首次搜索时验证，并可能产生 API 费用。',
+  saveKagiKey: '使用 Kagi 密钥',
+  aiRole: '用于 AI 回答（可选）。仅使用 Kagi 搜索时，无需填写 DeepSeek Key。',
+  missingSummaryKey: '网页结果已就绪。添加 DeepSeek API Key 后，可使用这些来源生成 AI 回答。',
+  configureAI: '配置 AI 回答',
+  generateAnswer: '生成 AI 回答',
+  answerReady: 'DeepSeek 已配置。点击“生成 AI 回答”即可沿用这些来源，无需再次搜索。',
+  keyConfigured: '密钥已添加到当前页面',
+  kagiSortDefault: 'Kagi 默认顺序',
+  kagiRanking:
+    '保留 Kagi 返回的顺序；可继承 API Key 开启的账户偏好。Kagi 未提供可直接对比的评分和来源等级。',
+  kagiLimitHint: '本应用每次获取最多 50 条，仅展开本次结果；暂未接入 Kagi 的下一页功能。',
   keyTitle: '连接 DeepSeek',
   keyIntro: '使用你自己的 DeepSeek API Key，费用由你的 DeepSeek 账户承担。',
   step1: '1. 获取密钥',
@@ -74,7 +94,7 @@ const zh = {
   tokenLabel: 'DeepSeek API Key',
   tokenHint: '通常以 sk- 开头；请粘贴密钥，不要填写账户密码。',
   keyPrivacy:
-    '只在当前页面内存中保存。刷新后清空；请求会经本实例后端发送到 DeepSeek，请只信任自己或可信的部署。',
+    '只在当前页面内存中保存。刷新后清空；请求会经本实例后端发送到对应服务商，请只信任自己或可信的部署。',
   showKey: '显示密钥',
   hideKey: '隐藏密钥',
   saveKey: '使用此密钥',
@@ -103,9 +123,9 @@ const zh = {
   historyClear: '清除检索记录',
   usageClear: '清除用量统计',
   reset: '清除全部本地数据',
-  resetHint: '同时移除密钥、当前内容和偏好设置。不会撤销 DeepSeek 平台上的密钥。',
+  resetHint: '同时移除密钥、当前内容和偏好设置。不会撤销服务商平台上的密钥。',
   privacyFlow:
-    '搜索与回答经本实例的 Cloudflare Worker 发往 DeepSeek；平台可能依自身政策处理服务数据。应用不加载第三方字体、图片或统计脚本。',
+    '搜索经本实例的 Cloudflare Worker 发往所选引擎；AI 回答及其来源摘要发往 DeepSeek；平台可能依自身政策处理服务数据。应用不加载第三方字体、图片或统计脚本。',
   triggerRule:
     'AI 只在提交内容末尾有 ? 或 ？ 且搜索得到有效来源时生成；普通搜索仍可能产生搜索 API 费用。',
   storageWarning: '浏览器不允许保存本地数据。记录和偏好目前只在本页面有效。',
@@ -219,6 +239,32 @@ const en: typeof zh = {
   answerFailed: 'Your search results are ready. The AI answer is temporarily unavailable.',
   cancelled: 'Stopped',
   truncated: 'The answer reached its length limit and may be incomplete.',
+  engineTitle: 'Web search engine',
+  engineHint:
+    'Choose one engine for web search. AI answers always use DeepSeek. Switching makes no requests.',
+  engineUnavailable: 'This engine has not been configured by the owner.',
+  kagiBeginTitle: 'Connect your Kagi account',
+  kagiKeyTitle: 'Connect Kagi',
+  kagiKeyIntro:
+    'For web search. API usage is billed separately from your Kagi subscription, to your own Kagi account.',
+  kagiStep1Text: 'Open the Kagi API portal, create a key, and set up API billing.',
+  kagiTokenHint: 'Paste a Kagi API key, not your password or session link.',
+  kagiValidation:
+    'Saving does not validate the key. Your first search validates it and may incur API fees.',
+  saveKagiKey: 'Use Kagi key',
+  aiRole: 'For AI answers (optional). A DeepSeek key is not required for Kagi web searches.',
+  missingSummaryKey:
+    'Web results are ready. Add a DeepSeek API key to generate an AI answer from these sources.',
+  configureAI: 'Configure AI answers',
+  generateAnswer: 'Generate AI answer',
+  answerReady:
+    'DeepSeek is configured. Generate an answer from these sources without another search.',
+  keyConfigured: 'Key added for this page',
+  kagiSortDefault: 'Kagi default order',
+  kagiRanking:
+    'Keeps Kagi’s returned order and can inherit account preferences enabled for your API key. Kagi does not provide comparable scores or source tiers.',
+  kagiLimitHint:
+    'This app retrieves up to 50 results per search and expands only that set. Kagi next-page requests are not enabled yet.',
   keyTitle: 'Connect DeepSeek',
   keyIntro: 'Use your own DeepSeek API key. Any fees are charged to your DeepSeek account.',
   step1: '1. Get your key',
@@ -228,7 +274,7 @@ const en: typeof zh = {
   tokenLabel: 'DeepSeek API key',
   tokenHint: 'Usually starts with sk-. Paste an API key, not your account password.',
   keyPrivacy:
-    'Kept only in this page’s memory and cleared on refresh. Requests pass through this instance’s backend to DeepSeek. Only use an instance you trust.',
+    'Kept only in this page’s memory and cleared on refresh. Requests pass through this instance’s backend to the respective provider. Only use an instance you trust.',
   showKey: 'Show key',
   hideKey: 'Hide key',
   saveKey: 'Use this key',
@@ -259,9 +305,9 @@ const en: typeof zh = {
   usageClear: 'Clear usage statistics',
   reset: 'Clear all local data',
   resetHint:
-    'Also removes the key, current content, and preferences. Does not revoke your key on DeepSeek.',
+    'Also removes the key, current content, and preferences. Does not revoke keys on provider platforms.',
   privacyFlow:
-    'Searches and answers pass through this instance’s Cloudflare Worker to DeepSeek. Providers may process service data under their policies. No third-party fonts, images, or analytics are loaded.',
+    'Searches pass through this instance’s Cloudflare Worker to the selected engine. AI questions and source summaries go to DeepSeek. Providers may process service data under their policies. No third-party fonts, images, or analytics are loaded.',
   triggerRule:
     'AI runs only when your submitted query ends with ? or ？ and search returns usable sources. Ordinary searches may still incur search API fees.',
   storageWarning:
@@ -345,10 +391,17 @@ const errors: Record<ErrorCode, [string, string]> = {
     'Ask the owner to check key mode, Access, and rate limiting configuration.',
   ],
   INSUFFICIENT_BALANCE: [
-    'DeepSeek 账户余额不足，请在官方平台检查。',
-    'Check your balance on the official DeepSeek platform.',
+    '服务商账户余额不足，请在对应官方平台检查。',
+    'Check your balance on the provider’s official platform.',
   ],
-  RATE_LIMITED: ['请求有些频繁，请稍后手动重试。', 'Too many requests. Wait before trying again.'],
+  PROVIDER_FORBIDDEN: [
+    'Kagi 拒绝了访问，请检查 Key 的产品权限或 IP 限制。',
+    'Kagi denied access. Check the key’s product permissions and IP restrictions.',
+  ],
+  RATE_LIMITED: [
+    '请求过于频繁或已达服务商用量上限，请检查后手动重试。',
+    'Rate or usage limit reached. Check your provider account before retrying.',
+  ],
   UPSTREAM_ERROR: [
     '服务暂时无法连接，请检查网络后手动重试。',
     'The service is unavailable. Check your connection and try again.',

@@ -1,9 +1,10 @@
-import { AppError, fields, LIMITS, object } from '../shared/contracts';
+import { AppError, fields, LIMITS, object, searchProvider } from '../shared/contracts';
 import { parseSearchInput } from '../shared/query-intent';
 import { keyMode, resolveKey, verifyAccess } from './auth';
 import { callUpstream, normalizeSearch, upstreamJSON, type Fetcher } from './deepseek';
 import { errorOf, json, readJSON, requestSignal, secureResponse, type Env } from './security';
 import { relaySummary, SUMMARY_PROMPT, validateSources } from './summary';
+import { searchKagi } from './kagi';
 
 // The factory injects external I/O for tests. Production has no authentication bypass flag.
 export function createWorker(
@@ -19,7 +20,19 @@ export function createWorker(
           return secureResponse(await env.ASSETS.fetch(request), false);
         if (url.pathname === '/api/config') {
           if (request.method !== 'GET') throw new AppError('METHOD_NOT_ALLOWED', 405);
-          return json({ keyMode: keyMode(env), maxQueryLength: LIMITS.query });
+          const mode = keyMode(env);
+          return json({
+            keyMode: mode,
+            maxQueryLength: LIMITS.query,
+            searchProviders:
+              mode === 'byok'
+                ? ['deepseek', 'kagi']
+                : [
+                    ...(env.DEEPSEEK_API_KEY ? ['deepseek'] : []),
+                    ...(env.KAGI_API_KEY ? ['kagi'] : []),
+                  ],
+            summaryAvailable: mode === 'byok' || Boolean(env.DEEPSEEK_API_KEY),
+          });
         }
         if (!['/api/check-key', '/api/search', '/api/summary'].includes(url.pathname))
           throw new AppError('NOT_FOUND', 404);
@@ -37,7 +50,9 @@ export function createWorker(
         else {
           fields(
             data,
-            url.pathname === '/api/search' ? ['rawQuery', 'count'] : ['rawQuery', 'results'],
+            url.pathname === '/api/search'
+              ? ['rawQuery', 'count', 'provider']
+              : ['rawQuery', 'results'],
           );
           query = parseSearchInput(data.rawQuery);
           if (
@@ -50,7 +65,9 @@ export function createWorker(
             sources = validateSources(data.results);
           }
         }
-        const { key, identity } = await resolveKey(request, env, authenticate);
+        const provider =
+          url.pathname === '/api/search' ? searchProvider(data.provider) : 'deepseek';
+        const { key, identity } = await resolveKey(request, env, authenticate, provider);
         if (!env.API_LIMITER) throw new AppError('CONFIG_ERROR', 503);
         if (!(await env.API_LIMITER.limit({ key: `${url.pathname}:${identity}` })).success)
           throw new AppError('RATE_LIMITED', 429);
@@ -67,6 +84,14 @@ export function createWorker(
           return json({ ok: true, requestId });
         }
         if (url.pathname === '/api/search') {
+          if (provider === 'kagi') {
+            return json({
+              ...query!,
+              ...(await searchKagi(fetcher, query!.query, Number(data.count), key, signal)),
+              provider,
+              requestId,
+            });
+          }
           const upstream = await callUpstream(fetcher, 'search', key, signal, {
             query: query!.query,
             count: data.count,
@@ -75,6 +100,7 @@ export function createWorker(
           return json({
             ...query!,
             ...normalizeSearch(await upstreamJSON(upstream, signal), Number(data.count)),
+            provider,
             requestId,
           });
         }

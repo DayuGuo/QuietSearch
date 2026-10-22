@@ -1,11 +1,12 @@
 import { useSyncExternalStore } from 'react';
-import { LIMITS, type Mode, type Usage } from '../../shared/contracts';
+import { LIMITS, type Mode, type Usage, type SearchProvider } from '../../shared/contracts';
 
 export type Preferences = {
   theme: 'system' | 'light' | 'dark';
   language: 'zh' | 'en';
   count: 10 | 20;
   historyEnabled: boolean;
+  searchProvider: SearchProvider;
 };
 export type HistoryEntry = {
   id: string;
@@ -15,10 +16,13 @@ export type HistoryEntry = {
   day: string;
   status: 'pending' | 'success' | 'failed' | 'cancelled';
   resultCount: number;
+  provider: SearchProvider;
 };
 export type DailyUsage = {
   day: string;
   searches: number;
+  deepseekSearches: number;
+  kagiSearches: number;
   successes: number;
   results: number;
   aiRequests: number;
@@ -33,6 +37,7 @@ export const defaults: Preferences = {
   language: 'zh',
   count: 10,
   historyEnabled: true,
+  searchProvider: 'deepseek',
 };
 const listeners = new Set<() => void>();
 
@@ -60,6 +65,7 @@ function preferences(value: unknown): Preferences {
     language: data.language === 'en' ? 'en' : 'zh',
     count: data.count === 20 ? 20 : 10,
     historyEnabled: data.historyEnabled !== false,
+    searchProvider: data.searchProvider === 'kagi' ? 'kagi' : 'deepseek',
   };
 }
 const integer = (value: unknown) =>
@@ -96,6 +102,7 @@ export function sanitizeActivity(value: unknown, now = new Date()): Activity {
           status: ['success', 'failed', 'cancelled'].includes(String(row.status))
             ? (row.status as HistoryEntry['status'])
             : ('cancelled' as const),
+          provider: row.provider === 'kagi' ? ('kagi' as const) : ('deepseek' as const),
           resultCount: Math.min(LIMITS.searchResults, integer(row.resultCount)),
         },
       ];
@@ -113,6 +120,11 @@ export function sanitizeActivity(value: unknown, now = new Date()): Activity {
       {
         day: row.day,
         searches: integer(row.searches),
+        deepseekSearches:
+          row.deepseekSearches === undefined
+            ? integer(row.searches)
+            : integer(row.deepseekSearches),
+        kagiSearches: integer(row.kagiSearches),
         successes: integer(row.successes),
         results: integer(row.results),
         aiRequests: integer(row.aiRequests),
@@ -149,6 +161,8 @@ function updateDay(day: string, change: (usage: DailyUsage) => DailyUsage) {
   const existing = snapshot.days.find((item) => item.day === day) ?? {
     day,
     searches: 0,
+    deepseekSearches: 0,
+    kagiSearches: 0,
     successes: 0,
     results: 0,
     aiRequests: 0,
@@ -175,16 +189,21 @@ export const activity = {
     snapshot = { ...snapshot, preferences: preferences({ ...snapshot.preferences, ...change }) };
     persist();
   },
-  start(query: string, mode: Mode) {
+  start(query: string, mode: Mode, provider: SearchProvider = 'deepseek') {
     const id = crypto.randomUUID(),
       day = localDay(),
       at = new Date().toISOString();
-    updateDay(day, (item) => ({ ...item, searches: item.searches + 1 }));
+    updateDay(day, (item) => ({
+      ...item,
+      searches: item.searches + 1,
+      deepseekSearches: item.deepseekSearches + (provider === 'deepseek' ? 1 : 0),
+      kagiSearches: item.kagiSearches + (provider === 'kagi' ? 1 : 0),
+    }));
     if (snapshot.preferences.historyEnabled)
       snapshot = {
         ...snapshot,
         history: [
-          { id, query, mode, at, day, status: 'pending' as const, resultCount: 0 },
+          { id, query, mode, provider, at, day, status: 'pending' as const, resultCount: 0 },
           ...snapshot.history,
         ]
           .filter((item) => Date.parse(item.at) > Date.now() - 30 * 86400_000)

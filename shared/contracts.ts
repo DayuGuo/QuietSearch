@@ -16,6 +16,12 @@ export const LIMITS = {
 } as const;
 
 export type Mode = 'search' | 'answer';
+export type SearchProvider = 'deepseek' | 'kagi';
+export function searchProvider(value: unknown): SearchProvider {
+  if (value === undefined) return 'deepseek';
+  if (value === 'deepseek' || value === 'kagi') return value;
+  throw new AppError('INVALID_INPUT');
+}
 export type Query = { submittedQuery: string; query: string; mode: Mode };
 export type SearchResult = {
   id: number;
@@ -29,6 +35,7 @@ export type SearchResult = {
   authority?: number | null;
 };
 export type SearchResponse = Query & {
+  provider?: SearchProvider;
   results: SearchResult[];
   requestId: string;
   requestedCount?: number;
@@ -36,7 +43,12 @@ export type SearchResponse = Query & {
   discardedCount?: number;
 };
 export type Source = Pick<SearchResult, 'id' | 'title' | 'url' | 'summary'>;
-export type PublicConfig = { keyMode: 'byok' | 'server'; maxQueryLength: number };
+export type PublicConfig = {
+  keyMode: 'byok' | 'server';
+  maxQueryLength: number;
+  searchProviders?: SearchProvider[];
+  summaryAvailable?: boolean;
+};
 export type Usage = { promptTokens: number; completionTokens: number };
 export type ErrorCode =
   | 'INVALID_INPUT'
@@ -50,6 +62,7 @@ export type ErrorCode =
   | 'AUTH_REQUIRED'
   | 'CONFIG_ERROR'
   | 'INSUFFICIENT_BALANCE'
+  | 'PROVIDER_FORBIDDEN'
   | 'RATE_LIMITED'
   | 'UPSTREAM_ERROR'
   | 'TIMEOUT'

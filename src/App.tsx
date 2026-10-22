@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
-import type { PublicConfig } from '../shared/contracts';
+import type { PublicConfig, SearchProvider } from '../shared/contracts';
 import { useSearch } from './hooks/useSearch';
 import { activity, localDay, useActivity } from './lib/activity';
 import { config as loadConfig } from './lib/api';
@@ -31,7 +31,7 @@ export default function App() {
   const [page, setPage] = useState<Page>('search'),
     [settings, setSettings] = useState(false);
   const [input, setInput] = useState(''),
-    [apiKey, setApiKey] = useState('');
+    [keys, setKeys] = useState({ deepseek: '', kagi: '' });
   const [config, setConfig] = useState<PublicConfig | null>(null),
     [configError, setConfigError] = useState(false),
     [reload, setReload] = useState(0);
@@ -39,10 +39,21 @@ export default function App() {
   const inputRef = useRef<HTMLInputElement>(null),
     composing = useRef(false);
   const flow = useSearch();
+  const providers = config?.searchProviders ?? ['deepseek', 'kagi'];
+  const provider = providers.includes(preferences.searchProvider)
+    ? preferences.searchProvider
+    : (providers[0] ?? preferences.searchProvider);
+  const providerName = provider === 'kagi' ? 'Kagi' : 'DeepSeek';
   const previewAnswer = /[?？]$/u.test(input.trim()),
-    ready = config?.keyMode === 'server' || Boolean(apiKey);
+    ready = config?.keyMode === 'server' ? providers.includes(provider) : Boolean(keys[provider]);
+  const canSummarize =
+    config?.keyMode === 'server' ? config.summaryAvailable !== false : Boolean(keys.deepseek);
   const hasSearch = Boolean(flow.result || flow.loading || flow.error);
   const today = days.find((item) => item.day === localDay());
+  const clearSearch = flow.clear;
+  useEffect(() => {
+    clearSearch();
+  }, [provider, clearSearch]);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -87,18 +98,25 @@ export default function App() {
       setSettings(true);
       return;
     }
-    void flow.submit(input, apiKey);
+    void flow.submit(input, {
+      provider,
+      searchKey: keys[provider],
+      summaryKey: keys.deepseek,
+      canSummarize,
+    });
   }
-  function setKey(value: string) {
-    flow.clear();
-    setApiKey(value);
+  function setKey(value: string, engine: SearchProvider = 'deepseek') {
+    if (engine === provider) flow.clear();
+    else flow.stop();
+    setKeys((previous) => ({ ...previous, [engine]: value }));
   }
   function clear() {
     if (clearTarget === 'history') activity.clearHistory();
     if (clearTarget === 'usage') activity.clearUsage();
     if (clearTarget === 'all') {
       activity.clearAll();
-      setKey('');
+      flow.clear();
+      setKeys({ deepseek: '', kagi: '' });
       setInput('');
       setPage('search');
     }
@@ -223,6 +241,13 @@ export default function App() {
                 </button>
               </form>
               <div className="search-hints">
+                <button
+                  className="text-button engine-indicator"
+                  onClick={() => setSettings(true)}
+                  aria-label={`${t.engineTitle}: ${providerName}`}
+                >
+                  {providerName}
+                </button>
                 <span className={previewAnswer ? 'mode-badge answer-mode' : 'mode-badge'}>
                   {previewAnswer ? <Sparkles size={13} /> : <Search size={13} />}
                   {previewAnswer ? t.searchAnswer : t.searchOnly}
@@ -279,7 +304,7 @@ export default function App() {
                       <KeyRound size={21} />
                     </div>
                     <div>
-                      <h2>{t.beginTitle}</h2>
+                      <h2>{provider === 'kagi' ? t.kagiBeginTitle : t.beginTitle}</h2>
                       <p>{t.beginText}</p>
                     </div>
                     <button className="button primary" onClick={() => setSettings(true)}>
@@ -290,7 +315,12 @@ export default function App() {
                 ) : (
                   <p className="connection-status">
                     <Check size={15} />
-                    {config?.keyMode === 'server' ? t.serverConnected : t.connected}
+                    {providerName} ·{' '}
+                    {config?.keyMode === 'server'
+                      ? t.serverConnected
+                      : provider === 'kagi'
+                        ? t.keyConfigured
+                        : t.connected}
                     <span>·</span>
                     {t.ready}
                   </p>
@@ -332,13 +362,14 @@ export default function App() {
                 key={flow.result.requestId}
                 result={flow.result}
                 summary={flow.summary}
+                canAnswer={canSummarize}
                 t={t}
                 language={preferences.language}
                 pageSize={preferences.count}
                 onStop={flow.stop}
                 onRetry={() => {
-                  if (!ready) setSettings(true);
-                  else void flow.retry(apiKey);
+                  if (!canSummarize) setSettings(true);
+                  else void flow.retry(keys.deepseek);
                 }}
               />
             )}
@@ -383,7 +414,14 @@ export default function App() {
         <SettingsDialog
           t={t}
           config={config}
-          apiKey={apiKey}
+          apiKey={keys.deepseek}
+          kagiKey={keys.kagi}
+          provider={provider}
+          onProvider={(engine) => {
+            flow.clear();
+            activity.setPreferences({ searchProvider: engine });
+          }}
+          onKagiKey={(value) => setKey(value, 'kagi')}
           onKey={setKey}
           onClose={() => setSettings(false)}
           onClear={(target) => {

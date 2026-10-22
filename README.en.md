@@ -2,7 +2,7 @@
 
 [简体中文](README.md) · **English**
 
-Search the web. Add a question mark for AI. A lightweight, self-hosted search app with local history, daily usage, Chinese/English UI, and light/dark themes.
+Search the web. Add a question mark for AI. A lightweight, self-hosted search app with DeepSeek/Kagi search selection, local history, daily usage, Chinese/English UI, and light/dark themes.
 
 **[Live demo](https://quietsearch.anotherdayu.com)** · [By Another Dayu](https://anotherdayu.com/) · [MIT license](LICENSE)
 
@@ -10,18 +10,20 @@ Search the web. Add a question mark for AI. A lightweight, self-hosted search ap
 
 ## Get started
 
-1. Create an API key on the [official DeepSeek platform](https://platform.deepseek.com/api_keys).
-2. Open the app, click **Add API key**, and paste your key. Optionally **Test connection**, then click **Use this key**.
+1. Open **Settings → Web search engine** and choose **DeepSeek** (default) or **Kagi**.
+2. Create a key on [DeepSeek](https://platform.deepseek.com/api_keys) or [Kagi](https://kagi.com/api/keys), paste it into the matching field, and click **Use this key** / **Use Kagi key**. DeepSeek offers a connection check. Kagi validates the key on your first search, which may incur API fees.
 3. Close settings, enter a query, and press **Enter** or click the arrow.
 
 If the demo opens in Chinese, use the settings icon → **界面语言 → English**.
 
-Your key stays in page memory and clears on refresh. Other browsers and devices need their own entry. Requests pass through the instance backend to DeepSeek, so use an instance you trust. Searches, AI answers, and retries may incur API fees; the connection check does not verify balance or search access.
+Your key stays in page memory and clears on refresh. Other browsers and devices need their own entry. Requests pass through the instance backend to the selected provider, so use an instance you trust. Searches, AI answers, and retries may incur API fees; the DeepSeek connection check does not verify balance or search access. Kagi API billing is separate from its subscription. Kagi-only search needs no DeepSeek key; AI answers still require one.
 
 <details>
 <summary>View API key setup</summary>
 
 ![Getting, entering, and testing an API key](docs/images/en/setup.png)
+
+![Selecting Kagi and configuring your API key](docs/images/en/kagi-setup.png)
 
 </details>
 
@@ -35,6 +37,8 @@ Screenshots show the real UI with synthetic results, answers, connection status,
 | `How do I get started with CSS Grid?` | Search, then an AI answer |
 
 AI runs only when the submitted query ends with `?` or `？`. Typing or choosing a suggestion or history entry never submits automatically.
+
+With Kagi selected, DeepSeek answers use Kagi search results. Without a DeepSeek key, web results remain available; add the key and generate an answer from the same sources without searching again.
 
 Answers use summaries from up to six sources. Click a citation number to open the original page. You can **Stop** generation or **Retry answer** after a failure; retrying keeps the original query and sources without another search.
 
@@ -51,7 +55,7 @@ Answers use summaries from up to six sources. Click a citation number to open th
 
 Each search requests up to **50 results**, showing **10** initially; settings can change the batch to 20. **Show more results** reveals items already retrieved. Expanding or reordering makes no additional API calls.
 
-Keep DeepSeek's default order or sort by combined score, source authority, or publication date. The API may return fewer results and has no infinite pagination. Scores are not fact-accuracy ratings.
+The default keeps the selected engine’s order. DeepSeek also offers score, authority, and date sorting; Kagi offers date sorting without invented scores. Fewer results may be returned. This version retrieves one batch and does not yet request Kagi’s next pages. Scores are not fact-accuracy ratings.
 
 <details>
 <summary>View the “Show more results” button</summary>
@@ -63,7 +67,7 @@ Keep DeepSeek's default order or sort by combined score, source authority, or pu
 ## History, usage, and appearance
 
 - **History**: filter, reuse, delete, or pause local records. Stored only in this browser, up to 200 entries for 30 days.
-- **Daily usage**: searches, result counts, AI requests, and reported tokens, retained for 90 days. No device sync; this is not a provider bill.
+- **Daily usage**: searches by DeepSeek/Kagi, result counts, AI requests, and reported tokens, retained for 90 days. No device sync; this is not a provider bill.
 - **Settings → Appearance & language**: change theme, language, and batch size. Mobile browsers are supported; **⌘K / Ctrl K** focuses search on desktop.
 
 <details>
