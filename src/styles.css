@@ -476,14 +476,22 @@ kbd {
 }
 .site-footer {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 22px;
+  gap: 2px;
   padding: 21px;
   color: var(--muted);
   font-size: 11px;
 }
-.site-footer > span {
+.footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 22px;
+}
+.footer-meta > span {
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -491,6 +499,23 @@ kbd {
 .site-footer .text-button {
   font-size: 11px;
   color: var(--muted);
+}
+.footer-links {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 22px;
+}
+.footer-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.footer-links a:hover {
+  color: var(--link);
+  text-decoration: underline;
 }
 .with-results {
   padding-top: 32px;
@@ -1305,7 +1330,6 @@ select {
     font-size: 11px;
   }
   .site-footer {
-    gap: 12px;
     padding: 17px 12px;
     font-size: 10px;
   }

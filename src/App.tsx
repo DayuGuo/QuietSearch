@@ -350,13 +350,27 @@ export default function App() {
         )}
       </div>
       <footer className="site-footer">
-        <span>
-          <ShieldCheck size={14} />
-          {t.footer}
-        </span>
-        <button className="text-button" onClick={() => setSettings(true)}>
-          {t.footerPrivacy}
-        </button>
+        <div className="footer-meta">
+          <span>
+            <ShieldCheck size={14} />
+            {t.footer}
+          </span>
+          <button className="text-button" onClick={() => setSettings(true)}>
+            {t.footerPrivacy}
+          </button>
+        </div>
+        <nav className="footer-links" aria-label={t.footerLinks}>
+          <a href="https://anotherdayu.com/" target="_blank" rel="noopener noreferrer">
+            {t.personalBlog}
+          </a>
+          <a
+            href="https://github.com/DayuGuo/QuietSearch"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t.githubRepository}
+          </a>
+        </nav>
       </footer>
       <div className="sr-only" role="status" aria-live="polite">
         {flow.loading
