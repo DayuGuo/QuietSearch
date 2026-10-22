@@ -8,6 +8,8 @@
 
 根据维护者要求，在页面底部增加“个人博客”和“GitHub 开源仓库”，分别指向 `https://anotherdayu.com/` 与 `https://github.com/DayuGuo/QuietSearch`。首页和结果页共用页脚，支持中英文，链接在新标签页打开并设置 noopener/noreferrer。桌面浅色与手机深色截图已检查，类型/lint、101 项测试、32 项浏览器回归（含自动无障碍检查）、5 项真实 Worker 运行时回归、构建与部署 dry run 均通过。
 
+随后按维护者要求，将“个人博客”改为博客实际名称“Another Dayu”，中英文均使用此站点名，链接地址不变。署名形式参考 [Transform](https://transform.tools/) 的作者名称链接。
+
 ### 公开开源发布补记
 
 已创建并上传至公开仓库 [DayuGuo/QuietSearch](https://github.com/DayuGuo/QuietSearch)，首次源码提交为 `b8ccaa7`，采用 MIT 许可证。67 个文件包含完整源码、测试和原始设计文档；密钥文件、日志、本地依赖、构建和浏览器测试产物不在提交中。提交使用 GitHub 隐私邮箱，已启用私密漏洞报告。

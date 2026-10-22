@@ -361,7 +361,7 @@ export default function App() {
         </div>
         <nav className="footer-links" aria-label={t.footerLinks}>
           <a href="https://anotherdayu.com/" target="_blank" rel="noopener noreferrer">
-            {t.personalBlog}
+            {t.authorSite}
           </a>
           <a
             href="https://github.com/DayuGuo/QuietSearch"
