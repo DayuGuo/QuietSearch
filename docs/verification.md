@@ -1,6 +1,6 @@
 # 验证记录
 
-日期：2026-10-22。此记录针对当前本地实现。尚未发布到 Cloudflare，也没有调用真实 DeepSeek 付费 API。
+日期：2026-10-22。此记录针对当前实现。已发布到 Cloudflare，验证期间没有调用真实 DeepSeek 付费 API。
 
 ## 实际执行与结果
 
@@ -8,7 +8,13 @@
 
 已创建并上传至公开仓库 [DayuGuo/QuietSearch](https://github.com/DayuGuo/QuietSearch)，首次源码提交为 `b8ccaa7`，采用 MIT 许可证。67 个文件包含完整源码、测试和原始设计文档；密钥文件、日志、本地依赖、构建和浏览器测试产物不在提交中。提交使用 GitHub 隐私邮箱，已启用私密漏洞报告。
 
-首次 [GitHub Actions 运行](https://github.com/DayuGuo/QuietSearch/actions/runs/39782275779) 已通过全新依赖安装、类型/lint/101 项测试/生产构建和 5 项真实 Worker 运行时回归。记录时正在安装浏览器系统依赖，云端 E2E 和部署 dry run 尚未完成；不将本地成功当作云端成功。后续状态以该运行页为准。
+首次 [GitHub Actions 运行](https://github.com/DayuGuo/QuietSearch/actions/runs/39782275779) 已全部成功，包括全新依赖安装、类型/lint/101 项测试/生产构建、5 项真实 Worker 运行时回归、浏览器 E2E 和部署 dry run。该工作流不调用真实付费 API，不发布 Worker。
+
+### Cloudflare 首次部署补记
+
+用户首次构建 `db2c3c81` 因 Build command=None，直接运行 `npx wrangler deploy`，缺少 Vite 生成的资源目录与部署配置而失败。已在现有 quietsearch Worker 的构建设置中保存 `npm run build`，保留部署命令 `npx wrangler deploy` 与根目录 `/`，并重试原部署。
+
+重试构建 `7c2d5479` 已成功，生产版本 `f793f243-e450-41c6-8320-76e3d5cf5c40`，地址为 [QuietSearch](https://quietsearch.zhaoyuguo.workers.dev)。浏览器已确认首页加载、搜索框和 Key 配置引导正常渲染；未使用真实 Key 执行线上搜索或摘要。默认仍为 BYOK，ASSETS、限流和摘要模型绑定已在成功部署日志中确认。本地构建与部署 dry run 也已再次通过。
 
 ### 更多结果与排序补记
 
@@ -72,8 +78,7 @@
 ## 尚未执行
 
 - 真实 DeepSeek models/Search/Chat 账号权限、余额、费用、延迟、取消后的计费行为。
-- 真实 Cloudflare 发布、Access 邮箱策略、JWKS 与所有域名/预览入口保护。
-- 远程 GitHub Actions 的完整通过结果；首次运行进度见上方发布补记。
+- 私人模式的 Access 邮箱策略、JWKS 与所有域名/预览入口保护；本次上线为 BYOK 模式。
 - 真机、Safari/Firefox、完整屏幕阅读器人工测试；手机测试为 Chromium 模拟。
 - 从公开仓库 Fork、导入 Cloudflare 并完成部署的完整账号授权流程。
 

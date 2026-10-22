@@ -50,9 +50,18 @@
 
 1. 在 Cloudflare 控制台进入 **Workers & Pages → Create application → Import a repository**（界面文字可能随平台更新）。
 2. 授权 GitHub，选择包含本项目的仓库；应用根目录保持仓库根目录。
-3. 构建命令 `npm run build`，部署命令 `npm run deploy`。如配置 Node 版本，使用 `NODE_VERSION=24`。非敏感运行配置以仓库的 `wrangler.jsonc` 为准。
+3. 在构建设置中填写下表。如配置 Node 版本，使用 `NODE_VERSION=24`。非敏感运行配置以仓库的 `wrangler.jsonc` 为准。
 4. 完成构建，打开平台提供的地址，在网页设置添加自己的 DeepSeek Key。
 5. 分别验证普通搜索和末尾问号搜索。默认部署只使用访问者提供的 Key。
+
+| Cloudflare 构建设置 | 填写内容                               |
+| ------------------- | -------------------------------------- |
+| Build command       | `npm run build`（必填，不能留为 None） |
+| Deploy command      | `npx wrangler deploy`                  |
+| Root directory      | `/`                                    |
+| Build variables     | 默认无需填写 API Key                   |
+
+构建会生成前端资源和部署配置。如果出现 `assets ... missing ... directory`，先检查 Build command 是否为空；保存 `npm run build` 后点击 **Retry build**。只运行 `npx wrangler deploy` 无法替代 Vite 构建。
 
 也可按 [Deploy to Cloudflare 官方说明](https://developers.cloudflare.com/workers/platform/deploy-buttons/) 从本仓库配置部署按钮。按钮不代替账号授权、充值或 Access 配置。
 
