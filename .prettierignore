@@ -1,0 +1,8 @@
+node_modules
+dist
+.wrangler
+search_project_design_v1_1
+artifacts
+test-results
+package-lock.json
+THIRD_PARTY_NOTICES.md
