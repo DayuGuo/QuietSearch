@@ -58,14 +58,14 @@
 
 ### 开发者命令
 
-使用 Node 24（见 `.nvmrc`）。在项目根目录：
+使用 Node 24（见 `.nvmrc`）。首次下载和启动：
 
 ```bash
+git clone https://github.com/DayuGuo/QuietSearch.git
+cd QuietSearch
 npm ci
 npm run dev
 ```
-
-如果尚未下载源码，先运行 `git clone https://github.com/DayuGuo/QuietSearch.git`，再运行 `cd QuietSearch`。
 
 打开终端显示的本机地址（默认 `http://127.0.0.1:5173`）。开发模式仍是真实接口实现，不会显示假结果。自动化测试的合成结果只存在测试文件中。没有 Key 也可以检查首页、设置、空历史和用量页面。
 

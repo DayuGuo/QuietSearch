@@ -4,6 +4,12 @@
 
 ## 实际执行与结果
 
+### 公开开源发布补记
+
+已创建并上传至公开仓库 [DayuGuo/QuietSearch](https://github.com/DayuGuo/QuietSearch)，首次源码提交为 `b8ccaa7`，采用 MIT 许可证。67 个文件包含完整源码、测试和原始设计文档；密钥文件、日志、本地依赖、构建和浏览器测试产物不在提交中。提交使用 GitHub 隐私邮箱，已启用私密漏洞报告。
+
+首次 [GitHub Actions 运行](https://github.com/DayuGuo/QuietSearch/actions/runs/39782275779) 已通过全新依赖安装、类型/lint/101 项测试/生产构建和 5 项真实 Worker 运行时回归。记录时正在安装浏览器系统依赖，云端 E2E 和部署 dry run 尚未完成；不将本地成功当作云端成功。后续状态以该运行页为准。
+
 ### 更多结果与排序补记
 
 网页每次提交请求最多 50 条结果，默认每批展示 10 条，可在设置切换为 20 条。新增“显示更多结果”和默认顺序、综合评分、来源等级、发布时间四种排序；展示上游评分和请求/返回/清理/保留数量。接口没有分页参数，展开仅展示已获取内容，最多 50 条，上游可能返回更少。
@@ -37,7 +43,7 @@
 | 最终构建 `npm exec --offline -- wrangler deploy --dry-run` | 再次打包预检成功；ASSETS、API_LIMITER、BYOK 和摘要模型绑定正确                          |
 | `npm audit --omit=dev --json`                              | 检查时生产依赖已知漏洞为 0，不代表不存在未知漏洞                                        |
 | 浏览器人工视觉检查                                         | 查看首页、Kagi 官方参考、结果、用量和手机设置截图；修复手机连接引导挤压问题             |
-| Git                                                        | 已创建公开仓库 DayuGuo/QuietSearch；上传状态以 GitHub main 分支和提交记录为准           |
+| Git                                                        | 完整源码已提交并上传公开仓库 DayuGuo/QuietSearch 的 main 分支                           |
 
 ## 测试能证明什么
 
@@ -67,7 +73,7 @@
 
 - 真实 DeepSeek models/Search/Chat 账号权限、余额、费用、延迟、取消后的计费行为。
 - 真实 Cloudflare 发布、Access 邮箱策略、JWKS 与所有域名/预览入口保护。
-- 远程 GitHub Actions；当前仅配置了工作流，未声称远程 CI 成功。
+- 远程 GitHub Actions 的完整通过结果；首次运行进度见上方发布补记。
 - 真机、Safari/Firefox、完整屏幕阅读器人工测试；手机测试为 Chromium 模拟。
 - 从公开仓库 Fork、导入 Cloudflare 并完成部署的完整账号授权流程。
 
