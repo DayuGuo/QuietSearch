@@ -25,6 +25,7 @@
     "test": "vitest run",
     "test:runtime": "npm run build && node scripts/test-runtime.mjs",
     "test:e2e": "npm run build && playwright test",
+    "screenshots": "npm run build && node scripts/docs-screenshots.mjs",
     "check": "npm run typecheck && npm run lint && npm test && npm run build",
     "deploy": "npm run build && wrangler deploy",
     "deploy:check": "npm run build && wrangler deploy --dry-run"

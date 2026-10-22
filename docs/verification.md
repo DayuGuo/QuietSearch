@@ -4,6 +4,14 @@
 
 ## 实际执行与结果
 
+### README 图文教程补记
+
+README 增加首页、Key 设置、普通搜索、问号回答、更多结果、检索记录、每日用量和手机深色界面共 8 张截图，以及 7 步使用教程。图片保存在纳入版本控制的 `docs/images/`，共约 671 KiB；已逐张检查显示、裁切和文字可读性，8 个 README 图片路径均已验证存在。
+
+新增 `npm run screenshots`，构建后用专用本机端口 4181 与独立浏览器上下文生成截图。全部 API 路由使用合成响应，未知 API 路由及外部页面请求均拒绝；不读取已有浏览器数据，截图只包含无效演示 Key 的遮罩。脚本已实际执行通过，确认普通查询无摘要调用、展开不新增请求、Key 不进入本地存储；README 明确说明结果、回答、连接成功提示和用量均为演示数据。
+
+文档和脚本更新后，类型/lint、101 项测试、32 项浏览器回归、5 项真实 Worker 运行时回归、构建、部署 dry run 和格式检查均再次通过。
+
 ### 页脚链接补记
 
 根据维护者要求，在页面底部增加“个人博客”和“GitHub 开源仓库”，分别指向 `https://anotherdayu.com/` 与 `https://github.com/DayuGuo/QuietSearch`。首页和结果页共用页脚，支持中英文，链接在新标签页打开并设置 noopener/noreferrer。桌面浅色与手机深色截图已检查，类型/lint、101 项测试、32 项浏览器回归（含自动无障碍检查）、5 项真实 Worker 运行时回归、构建与部署 dry run 均通过。
@@ -79,7 +87,7 @@
 - **真实 workerd HTTP** 检查静态 HTML 的严格 CSP、不含 unsafe-inline，以及无问号摘要请求的 400/no-store。
 - axe 对首页、设置、结果、历史、用量进行 WCAG A/AA 自动检查；两种浏览器配置均无已报告违规。这不是完整无障碍认证。
 
-截图位于被 Git 忽略的 `artifacts/`，包括 home/results/history/usage/settings 的 desktop 和 mobile-dark。仅有合成查询和无效测试 Key，没有真实凭证或用户检索内容。
+自动化测试截图位于被 Git 忽略的 `artifacts/`，包括 home/results/history/usage/settings 的 desktop 和 mobile-dark；README 教程截图则保存在已纳入 Git 的 `docs/images/`。仅有合成查询和无效测试 Key，没有真实凭证或用户检索内容。
 
 ## 尚未执行
 
